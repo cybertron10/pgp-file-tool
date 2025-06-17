@@ -2,7 +2,7 @@
 
 A web-based PGP file encryption/decryption tool similar to Kleopatra, working with .asc files.
 
-![Demo Screenshot](./assets/screenshot-1.png)
+![Demo Screenshot](./assets/demo.gif)
 
 ## Features ✨
 
