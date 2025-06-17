@@ -29,11 +29,11 @@ app.get('/', (req, res) => {
 app.get('/generate-keys', async (req, res) => {
     try {
         const { privateKey, publicKey } = await openpgp.generateKey({
-            type: 'ecc', // ECC (Elliptic Curve Cryptography) keys are smaller and faster
-            curve: 'curve25519', // Secure curve
+            type: 'ecc',
+            curve: 'curve25519',
             userIDs: [{ name: 'File Crypto User', email: 'user@example.com' }],
-            passphrase: '', // No passphrase for simplicity
-            format: 'armored' // ASCII-armored format (.asc)
+            passphrase: '',
+            format: 'armored'
         });
 
         res.json({
@@ -58,6 +58,7 @@ app.post('/encrypt', upload.single('file'), async (req, res) => {
 
         const filePath = req.file.path;
         const publicKey = req.body.publicKey;
+        const originalName = req.file.originalname;
 
         // Read the public key
         const publicKeys = await openpgp.readKeys({ armoredKeys: publicKey });
@@ -68,11 +69,12 @@ app.post('/encrypt', upload.single('file'), async (req, res) => {
         // Encrypt the file
         const encrypted = await openpgp.encrypt({
             message: await openpgp.createMessage({ binary: fileData }),
-            encryptionKeys: publicKeys
+            encryptionKeys: publicKeys,
+            format: 'binary'
         });
 
-        // Create a download link
-        const outputFileName = `${req.file.originalname}.asc`;
+        // Create output filename with .gpg extension
+        const outputFileName = `${originalName}.gpg`;
         const outputPath = path.join(__dirname, 'uploads', outputFileName);
         await fs.promises.writeFile(outputPath, encrypted);
 
@@ -103,9 +105,10 @@ app.post('/decrypt', upload.fields([
         const encryptedFilePath = req.files['file'][0].path;
         const privateKeyFilePath = req.files['privateKeyFile'][0].path;
         const passphrase = req.body.passphrase || '';
+        const originalName = req.files['file'][0].originalname;
 
         // Read the encrypted file
-        const encryptedData = await fs.promises.readFile(encryptedFilePath, 'utf8');
+        const encryptedData = await fs.promises.readFile(encryptedFilePath);
 
         // Read the private key
         const privateKeyArmored = await fs.promises.readFile(privateKeyFilePath, 'utf8');
@@ -115,23 +118,22 @@ app.post('/decrypt', upload.fields([
 
         // Decrypt the file
         const message = await openpgp.readMessage({
-            armoredMessage: encryptedData
+            binaryMessage: encryptedData
         });
 
         const { data: decryptedData } = await openpgp.decrypt({
             message,
             decryptionKeys: privateKey,
-            config: { allowInsecureDecryptionWithSigningKeys: true } // For demo purposes
+            format: 'binary'
         });
 
-        // Determine original file name (remove .asc if present)
-        let originalName = req.files['file'][0].originalname;
-        if (originalName.endsWith('.asc')) {
-            originalName = originalName.slice(0, -4);
+        // Remove ONLY the .gpg extension
+        let outputFileName = originalName;
+        if (outputFileName.endsWith('.gpg')) {
+            outputFileName = outputFileName.slice(0, -4);
         }
 
         // Create a download link
-        const outputFileName = `decrypted_${originalName}`;
         const outputPath = path.join(__dirname, 'uploads', outputFileName);
         await fs.promises.writeFile(outputPath, decryptedData);
 

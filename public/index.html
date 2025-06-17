@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PGP File Encryption Tool (Kleopatra-like)</title>
     <style>
@@ -69,7 +69,7 @@
     </style>
 </head>
 <body>
-    <div class="container">
+      <div class="container">
         <h1>PGP File Encryption Tool</h1>
         
         <!-- Key Generation Section -->
@@ -125,8 +125,8 @@
                     <input type="password" id="passphrase" name="passphrase">
                 </div>
                 <div class="file-input">
-                    <label for="decryptFile">Encrypted File to Decrypt (.asc):</label>
-                    <input type="file" id="decryptFile" name="file" required accept=".asc">
+                    <label for="decryptFile">Encrypted File to Decrypt (.gpg):</label>
+                    <input type="file" id="decryptFile" name="file" required accept=".gpg">
                 </div>
                 <button type="submit">Decrypt File</button>
             </form>
@@ -134,7 +134,7 @@
     </div>
 
     <script>
-        // Generate keys
+         // Generate keys
         document.getElementById('generateKeys').addEventListener('click', async () => {
             try {
                 const response = await fetch('/generate-keys');
@@ -207,7 +207,11 @@
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `${document.getElementById('encryptFile').files[0].name}.asc`;
+                    
+                    // Keep original name and add .gpg
+                    const originalName = document.getElementById('encryptFile').files[0].name;
+                    a.download = `${originalName}.gpg`;
+                    
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
@@ -242,12 +246,13 @@
                     const a = document.createElement('a');
                     a.href = url;
                     
+                    // Remove only .gpg while preserving original extensions
                     let originalName = document.getElementById('decryptFile').files[0].name;
-                    if (originalName.endsWith('.asc')) {
+                    if (originalName.endsWith('.gpg')) {
                         originalName = originalName.slice(0, -4);
                     }
                     
-                    a.download = `decrypted_${originalName}`;
+                    a.download = originalName;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
